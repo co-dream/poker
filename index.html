@@ -17,6 +17,7 @@
             --green: #4cd137;  /* 贏錢 / 平衡 */
             --red: #e84118;    /* 輸錢 / 錯誤 */
             --blue: #00a8ff;   /* 重點 */
+            --grey: #555555;   /* 重置 */
             
             --border-radius: 12px;
         }
@@ -31,33 +32,43 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 標題與新增按鈕區 */
+        /* 標題與按鈕區 (Header) */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-        h1 { margin: 0; font-size: 1.4rem; color: var(--text-main); }
-        .player-count { color: var(--text-sub); font-size: 0.9rem; }
+        .header-info h1 { margin: 0; font-size: 1.3rem; color: var(--text-main); }
+        .player-count { color: var(--text-sub); font-size: 0.8rem; }
 
-        .btn-add {
-            background-color: var(--green);
-            color: white;
+        /* 右側按鈕群組 */
+        .header-actions {
+            display: flex;
+            gap: 8px; /* 按鈕之間的間距 */
+        }
+
+        /* 通用標頭按鈕樣式 */
+        .btn-header {
             border: none;
-            padding: 10px 20px;
+            padding: 8px 14px;
             border-radius: 20px;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 5px;
-            box-shadow: 0 4px 10px rgba(76, 209, 55, 0.3);
+            gap: 4px;
             cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            white-space: nowrap;
         }
-        .btn-add:active { transform: scale(0.95); }
+        .btn-header:active { transform: scale(0.95); }
 
-        /* 玩家卡片列表 (取代表格) */
+        .btn-add { background-color: var(--green); color: white; }
+        .btn-export { background-color: var(--blue); color: white; }
+        .btn-reset { background-color: var(--grey); color: #ddd; } /* 重置按鈕 */
+
+        /* 玩家卡片列表 */
         .player-list {
             display: flex;
             flex-direction: column;
@@ -115,7 +126,7 @@
             font-size: 1.1rem;
             text-align: center;
             width: 100%;
-            box-sizing: border-box; /* 確保不跑版 */
+            box-sizing: border-box;
             outline: none;
         }
         input:focus { border-color: var(--blue); background-color: #333; }
@@ -131,7 +142,7 @@
         .win { color: var(--green); }
         .lose { color: var(--red); }
 
-        /* 底部固定統計列 (Sticky Footer) */
+        /* 底部固定統計列 */
         .footer-bar {
             position: fixed;
             bottom: 0;
@@ -185,6 +196,7 @@
             text-align: center;
         }
         .modal h2 { margin-top: 0; font-size: 1.2rem; margin-bottom: 20px; }
+        
         .modal-input {
             width: 100%;
             padding: 12px;
@@ -197,6 +209,22 @@
             text-align: center;
             box-sizing: border-box;
         }
+        
+        .modal-textarea {
+            width: 100%;
+            height: 200px;
+            background: #111;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: white;
+            font-family: monospace;
+            padding: 10px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            resize: none;
+            line-height: 1.5;
+        }
+
         .modal-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .btn-modal {
             padding: 12px;
@@ -209,6 +237,7 @@
         .btn-cancel { background: #444; color: #ccc; }
         .btn-confirm { background: var(--green); color: white; }
         .btn-confirm-red { background: var(--red); color: white; }
+        .btn-copy { background: var(--blue); color: white; grid-column: 1 / -1; }
 
         /* 空狀態提示 */
         .empty-state {
@@ -223,13 +252,21 @@
 
     <!-- 頂部區 -->
     <div class="header">
-        <div>
+        <div class="header-info">
             <h1>Poker Game</h1>
-            <span class="player-count">玩家人數: <span id="playerCount">0</span></span>
+            <span class="player-count">人數: <span id="playerCount">0</span></span>
         </div>
-        <button class="btn-add" onclick="openAddModal()">
-            <span>＋</span> 新增玩家
-        </button>
+        <div class="header-actions">
+            <button class="btn-header btn-reset" onclick="openResetModal()">
+                <span>🔄</span> 重置
+            </button>
+            <button class="btn-header btn-export" onclick="openExportModal()">
+                <span>📋</span> 匯出
+            </button>
+            <button class="btn-header btn-add" onclick="openAddModal()">
+                <span>＋</span> 新增
+            </button>
+        </div>
     </div>
 
     <!-- 玩家卡片列表 -->
@@ -286,6 +323,30 @@
         </div>
     </div>
 
+    <!-- 4. 匯出結果彈窗 -->
+    <div id="exportModal" class="modal-overlay" onclick="closeExportModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>戰績匯出</h2>
+            <textarea id="exportText" class="modal-textarea" readonly></textarea>
+            <div class="modal-btns">
+                <button class="btn-modal btn-cancel" onclick="closeExportModal()">關閉</button>
+                <button class="btn-modal btn-copy" onclick="copyToClipboard()">複製文字</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. 重置確認彈窗 (新功能) -->
+    <div id="resetModal" class="modal-overlay" onclick="closeResetModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 style="color: var(--red);">⚠️ 重置遊戲</h2>
+            <p style="color:#ccc; margin-bottom:20px;">確定要清除所有資料重新開始嗎？<br>(此動作無法復原)</p>
+            <div class="modal-btns">
+                <button class="btn-modal btn-cancel" onclick="closeResetModal()">取消</button>
+                <button class="btn-modal btn-confirm-red" onclick="executeReset()">確定重置</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         let players = [];
         const DEFAULT_BUYIN = 1000;
@@ -294,11 +355,27 @@
         let pendingChange = null;
         let playerToDeleteId = null;
 
+        // --- 儲存與讀取 (Local Storage) ---
+        function saveToStorage() {
+            localStorage.setItem('poker_players_v2', JSON.stringify(players));
+        }
+
+        function loadFromStorage() {
+            const data = localStorage.getItem('poker_players_v2');
+            if (data) {
+                try {
+                    players = JSON.parse(data);
+                    renderPlayerList();
+                } catch(e) {
+                    console.error("Save data corrupted", e);
+                }
+            }
+        }
+
         // --- 1. 新增玩家 ---
         function openAddModal() {
             document.getElementById('addPlayerModal').style.display = 'flex';
             document.getElementById('modalName').focus();
-            // 自動帶入上一個金額
             const lastBuyIn = players.length > 0 ? players[players.length-1].buyIn : DEFAULT_BUYIN;
             document.getElementById('modalBuyIn').value = lastBuyIn;
         }
@@ -324,6 +401,7 @@
                 cashOut: 0
             });
 
+            saveToStorage(); // 存檔
             document.getElementById('modalName').value = '';
             closeAddModal();
             renderPlayerList();
@@ -343,10 +421,8 @@
             const oldValue = type === 'buyIn' ? player.buyIn : player.cashOut;
             if (newValue === oldValue) return; // 沒變
 
-            // 設置暫存
             pendingChange = { id, type, newValue, player };
             
-            // 顯示確認文字
             const fieldName = type === 'buyIn' ? '總買入' : '總結算';
             const color = type === 'buyIn' ? '#fff' : '#00a8ff';
             const msg = `修改 <strong>${player.name}</strong> 的 ${fieldName}?<br><br>
@@ -362,7 +438,8 @@
                 if (type === 'buyIn') player.buyIn = newValue;
                 else player.cashOut = newValue;
                 
-                renderPlayerList(); // 更新介面
+                saveToStorage(); // 存檔
+                renderPlayerList();
             }
             document.getElementById('changeConfirmModal').style.display = 'none';
             pendingChange = null;
@@ -392,9 +469,93 @@
         function executeDelete() {
             if (playerToDeleteId !== null) {
                 players = players.filter(p => p.id !== playerToDeleteId);
+                saveToStorage(); // 存檔
                 renderPlayerList();
             }
             document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // --- 4. 匯出戰績邏輯 ---
+        function openExportModal() {
+            if (players.length === 0) {
+                alert("目前沒有玩家資料");
+                return;
+            }
+
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2, '0')}/${now.getDate().toString().padStart(2, '0')}`;
+
+            let winners = [];
+            let losers = [];
+            
+            players.forEach(p => {
+                const result = p.cashOut - p.buyIn;
+                if (result > 0) {
+                    winners.push({ name: p.name, result: result });
+                } else if (result < 0) {
+                    losers.push({ name: p.name, result: result });
+                }
+            });
+
+            winners.sort((a, b) => b.result - a.result);
+            losers.sort((a, b) => a.result - b.result);
+
+            let text = `${dateStr}\n`;
+            text += `\n💰💰💰💰\n`;
+            if (winners.length > 0) {
+                winners.forEach(p => { text += `${p.name} +${p.result}\n`; });
+            } else {
+                text += `(無)\n`;
+            }
+
+            text += `\n🩸🩸🩸🩸\n`;
+            if (losers.length > 0) {
+                losers.forEach(p => { text += `${p.name} ${p.result}\n`; });
+            } else {
+                text += `(無)\n`;
+            }
+
+            const textArea = document.getElementById('exportText');
+            textArea.value = text;
+            document.getElementById('exportModal').style.display = 'flex';
+        }
+
+        function closeExportModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('exportModal').style.display = 'none';
+        }
+
+        function copyToClipboard() {
+            const textArea = document.getElementById('exportText');
+            textArea.select();
+            textArea.setSelectionRange(0, 99999);
+            try {
+                navigator.clipboard.writeText(textArea.value).then(() => {
+                    alert("✅ 已複製到剪貼簿！");
+                }).catch(() => {
+                    document.execCommand('copy');
+                    alert("✅ 已複製到剪貼簿！");
+                });
+            } catch (err) {
+                alert("❌ 複製失敗");
+            }
+        }
+
+        // --- 5. 重置邏輯 (新功能) ---
+        function openResetModal() {
+            document.getElementById('resetModal').style.display = 'flex';
+        }
+
+        function closeResetModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('resetModal').style.display = 'none';
+        }
+
+        function executeReset() {
+            players = [];
+            saveToStorage(); // 存檔 (清空)
+            renderPlayerList();
+            document.getElementById('resetModal').style.display = 'none';
         }
 
         // --- 渲染與計算核心 ---
@@ -405,7 +566,6 @@
             const totalCashOutEl = document.getElementById('totalCashOut');
             const statusEl = document.getElementById('balanceStatus');
 
-            // 1. 計算總和
             let totalBuyIn = 0;
             let totalCashOut = 0;
             players.forEach(p => {
@@ -413,7 +573,6 @@
                 totalCashOut += p.cashOut;
             });
 
-            // 2. 更新頂部與底部數據
             countEl.textContent = players.length;
             totalBuyInEl.textContent = totalBuyIn;
             totalCashOutEl.textContent = totalCashOut;
@@ -432,7 +591,6 @@
                     statusEl.style.color = 'var(--red)';
                 }
                 
-                // 3. 產生卡片列表
                 let html = '';
                 players.forEach(p => {
                     const result = p.cashOut - p.buyIn;
@@ -469,6 +627,9 @@
         document.getElementById('modalName').addEventListener('keypress', function(e){
             if(e.key === 'Enter') document.getElementById('modalBuyIn').focus();
         });
+
+        // --- 啟動時讀取資料 ---
+        loadFromStorage();
 
     </script>
 </body>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vintage Poker Room 記帳板</title>
+    <style>
+        :root {
+            /* --- Vintage Casino Theme --- */
+            --bg-color: #274e36;         /* 牌桌綠 */
+            --bg-gradient: radial-gradient(circle at center, #35654d 0%, #1a2f24 100%);
+            
+            --card-bg: rgba(0, 0, 0, 0.5); /* 半透明黑底 */
+            --text-main: #f0e6d2;        /* 羊皮紙色/米白 */
+            --text-muted: #c0b298;       /* 舊金色 */
+            
+            --primary-color: #111111;    /* 極致黑 */
+            --accent-color: #d4af37;     /* 賭場金 */
+            --accent-hover: #b5952f;
+            --danger-color: #8b0000;     /* 酒紅/血紅 */
+            
+            --border-color: #6e6046;     /* 銅金色邊框 */
+            
+            --input-bg: #0a0a0a;
+            --input-border: #8b7d52;
+        }
+
+        body {
+            /* 使用 Georgia 或是 Times New Roman 呈現復古感 */
+            font-family: "Georgia", "Times New Roman", serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 15px;
+            background-color: var(--bg-color);
+            background-image: var(--bg-gradient);
+            color: var(--text-main);
+            padding-bottom: 100px;
+            min-height: 100vh;
+        }
+        
+        h1 { 
+            text-align: center; 
+            color: var(--accent-color); 
+            margin: 25px 0; 
+            font-size: 2rem; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px #000;
+            border-bottom: 1px double var(--accent-color);
+            display: inline-block;
+            padding-bottom: 10px;
+            /* 置中修正 */
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* 頂部控制列 */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        .controls-bar div { color: var(--text-muted); font-weight: bold; font-style: italic; }
+
+        /* 按鈕基礎樣式 - 實體按鈕風格 */
+        button {
+            padding: 10px 18px;
+            border: 1px solid var(--accent-color); /* 金色邊框 */
+            border-radius: 4px; /* 較直的圓角 */
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: "Georgia", serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5); /* 3D 陰影 */
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-shadow: 1px 1px 0 #000;
+        }
+        button:active { 
+            transform: translateY(2px); 
+            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+        }
+
+        .btn-add-player { 
+            background: linear-gradient(to bottom, #4a4a4a, #2b2b2b);
+            color: var(--accent-color);
+        }
+        .btn-add-player:hover { filter: brightness(1.2); }
+
+        .btn-calc { 
+            background: linear-gradient(to bottom, #294d6e, #1a324b); /* 復古藍 */
+            border-color: #5d8ab5;
+            width: 90%; 
+            max-width: 880px;
+            padding: 16px;
+            font-size: 1.2rem;
+            position: fixed; 
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 90;
+            border-radius: 6px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.8), 0 0 0 2px #1a324b inset;
+        }
+
+        /* 列表刪除按鈕 - 復古印章風格 */
+        .btn-delete-icon { 
+            background-color: transparent;
+            color: #dfaaaaaa;
+            padding: 8px; 
+            font-size: 18px;
+            border-radius: 50%; 
+            width: 40px;
+            height: 40px;
+            border: 2px solid #8b0000;
+            box-shadow: none;
+        }
+        .btn-delete-icon:hover {
+            background-color: #8b0000;
+            color: var(--text-main);
+        }
+
+        /* 表格容器 - 高級計分卡風格 */
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+            border: 2px solid var(--border-color); /* 金框 */
+            margin-bottom: 25px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+        }
+        th { 
+            background-color: rgba(0,0,0,0.8); 
+            color: var(--accent-color); 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--accent-color);
+            font-size: 0.85rem;
+        }
+        
+        /* 輸入框 - 像是舊式計數器 */
+        input[type="number"], input[type="text"] {
+            padding: 10px; 
+            border: 1px solid var(--input-border);
+            border-radius: 2px;
+            font-size: 18px;
+            font-family: "Courier New", monospace; /* 打字機字體 */
+            font-weight: bold;
+            text-align: center;
+            background-color: var(--input-bg);
+            color: var(--accent-color); /* 數字金色 */
+            width: 110px;
+            max-width: 100%;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+        input.cashout-input {
+            border: 1px solid #5d8ab5;
+            background-color: #0d151c;
+            color: #aaddff; /* 結算用藍色字區分 */
+        }
+        input:focus { outline: none; border-color: var(--text-main); background-color: #222; }
+
+        .win { color: #55efc4; text-shadow: 0 0 5px rgba(85, 239, 196, 0.4); font-family: "Courier New", monospace;}
+        .lose { color: #ff7675; text-shadow: 0 0 5px rgba(255, 118, 117, 0.4); font-family: "Courier New", monospace;}
+        
+        /* 統計區塊 - 類似銅牌 */
+        .summary {
+            padding: 20px;
+            background: linear-gradient(135deg, #2b2b2b, #1a1a1a);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            margin-bottom: 90px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        /* 裝飾線 */
+        .summary::before {
+            content: '';
+            position: absolute;
+            top: 5px; left: 5px; right: 5px; bottom: 5px;
+            border: 1px dashed #444;
+            pointer-events: none;
+        }
+        
+        .status-ok { color: #55efc4; font-weight: bold; display: block; margin-top: 10px; letter-spacing: 1px;}
+        .status-err { color: #ff7675; font-weight: bold; display: block; margin-top: 10px; letter-spacing: 1px;}
+
+        /* --- Modal (復古木牌風格) --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+            padding: 20px;
+        }
+        .modal {
+            background: #1a1a1a;
+            padding: 30px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 360px;
+            box-shadow: 0 0 0 1px var(--accent-color), 0 20px 50px rgba(0,0,0,0.8);
+            animation: popIn 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid #111; /* 雙層邊框 */
+            text-align: center;
+        }
+        @keyframes popIn {
+            from { transform: scale(0.9) translateY(20px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .modal h2 { margin-top: 0; color: var(--accent-color); font-family: "Georgia", serif; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 10px;}
+        .modal p { color: var(--text-muted); line-height: 1.6; }
+        
+        .form-group label { color: var(--accent-color); font-size: 0.9rem; letter-spacing: 1px; }
+        .form-group input { 
+            width: 100%; 
+            background: #000; 
+            border: 1px solid #444; 
+            color: white;
+            font-family: sans-serif; /* 輸入時清楚一點 */
+        }
+        
+        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+        
+        .btn-cancel { background: #333; border-color: #555; color: #aaa; box-shadow: none;}
+        .btn-confirm { background: var(--accent-color); color: #000; border-color: #fff; }
+        .btn-confirm:hover { background: #ffd700; }
+        .btn-confirm-delete { background: var(--danger-color); color: white; border-color: #ff3333; }
+
+        /* RWD 手機版優化 */
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead tr { position: absolute; top: -9999px; left: -9999px; }
+            
+            tr { 
+                margin-bottom: 15px; 
+                border-radius: 6px;
+                background: rgba(0,0,0,0.4);
+                padding: 10px 15px;
+                border: 1px solid var(--border-color);
+            }
+            
+            td { 
+                border: none; 
+                position: relative; 
+                padding-left: 0; 
+                text-align: right; 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                padding: 12px 0;
+                border-bottom: 1px dashed #444;
+            }
+            td:last-child { border-bottom: none; }
+            
+            td:before { 
+                content: attr(data-label); 
+                font-weight: bold; 
+                color: var(--accent-color);
+                font-size: 0.9rem;
+                text-transform: uppercase;
+            }
+            
+            /* 輸入框在手機上稍微縮小一點以適應寬度 */
+            input[type="number"] { width: 120px; font-size: 1.1rem; }
+            .btn-delete-icon { margin-left: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>♠️ Poker Room ♦️</h1>
+
+    <!-- 控制區 -->
+    <div class="controls-bar">
+        <div>Players: <span id="playerCount" style="color:var(--accent-color); font-family:'Courier New'">0</span></div>
+        <button class="btn-add-player" onclick="openAddModal()">
+            <span>➕</span> Add Player
+        </button>
+    </div>
+
+    <!-- 列表 -->
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 20%">Player</th>
+                    <th style="width: 30%">Buy-in</th>
+                    <th style="width: 30%">Cash Out</th>
+                    <th style="width: 10%">Result</th>
+                    <th style="width: 10%">Action</th>
+                </tr>
+            </thead>
+            <tbody id="playerTableBody">
+                <!-- 玩家資料會動態插入這裡 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 結算統計 -->
+    <div class="summary">
+        <div style="display: flex; justify-content: space-around; margin-bottom: 15px;">
+            <div>Total Buy-in<br><strong id="totalBuyIn" style="font-size: 1.6em; color: var(--accent-color); font-family: 'Courier New';">0</strong></div>
+            <div>Total Cash Out<br><strong id="totalCashOut" style="font-size: 1.6em; color: #aaddff; font-family: 'Courier New';">0</strong></div>
+        </div>
+        <div style="border-top: 1px solid #444; padding-top: 15px;">
+            <span id="balanceStatus" style="color:#666; font-style: italic;">Waiting for game...</span>
+        </div>
+    </div>
+
+    <button class="btn-calc" onclick="calculateResults()">🔄 CALCULATE & UPDATE</button>
+
+    <!-- 1. 新增玩家彈窗 -->
+    <div id="addPlayerModal" class="modal-overlay" onclick="closeAddModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>New Player</h2>
+            <div class="form-group">
+                <label>NAME</label>
+                <input type="text" id="modalName" placeholder="e.g. Ryan" autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>BUY-IN AMOUNT</label>
+                <input type="number" id="modalBuyIn" placeholder="1000" inputmode="numeric">
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+                <button class="btn-confirm" onclick="confirmAddPlayer()">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 數值修改確認彈窗 -->
+    <div id="changeConfirmModal" class="modal-overlay">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2>⚠️ Confirm Change</h2>
+            <p id="changeConfirmMessage">Content...</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="cancelChange()">Cancel</button>
+                <button class="btn-confirm" onclick="executeChange()">Update</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. 刪除確認彈窗 -->
+    <div id="deleteModal" class="modal-overlay" onclick="closeDeleteModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <h2 style="color: var(--danger-color); border-bottom-color: var(--danger-color);">⚠️ Remove Player</h2>
+            <p id="deleteMessage">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn-confirm-delete" onclick="executeDelete()">Remove</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let players = [];
+        const DEFAULT_BUYIN = 1000;
+        
+        let pendingChange = null;
+        let playerToDeleteId = null; 
+
+        // --- 1. 新增玩家功能 ---
+        function openAddModal() {
+            document.getElementById('addPlayerModal').style.display = 'flex';
+            document.getElementById('modalName').focus();
+            
+            const lastBuyIn = players.length > 0 ? players[players.length-1].buyIn : DEFAULT_BUYIN;
+            document.getElementById('modalBuyIn').value = lastBuyIn;
+        }
+
+        function closeAddModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('addPlayerModal').style.display = 'none';
+        }
+
+        function confirmAddPlayer() {
+            const nameInput = document.getElementById('modalName');
+            const buyInInput = document.getElementById('modalBuyIn');
+            const name = nameInput.value.trim();
+            const buyIn = parseFloat(buyInInput.value);
+
+            if (!name || isNaN(buyIn)) {
+                alert("Please enter valid name and amount");
+                return;
+            }
+
+            players.push({
+                id: Date.now(),
+                name: name,
+                buyIn: buyIn,
+                cashOut: 0
+            });
+
+            nameInput.value = '';
+            closeAddModal();
+            renderTable();
+            calculateResults();
+        }
+
+        // --- 2. 數值修改確認邏輯 ---
+        function requestUpdateBuyIn(id, inputElement) {
+            const newValue = parseFloat(inputElement.value);
+            const player = players.find(p => p.id === id);
+            
+            if (!player) return;
+            if (isNaN(newValue)) {
+                renderTable();
+                return;
+            }
+            if (newValue === player.buyIn) return;
+
+            pendingChange = {
+                type: 'buyIn',
+                player: player,
+                newValue: newValue,
+                oldValue: player.buyIn
+            };
+
+            showChangeModal(`Modify Buy-in for <strong>${player.name}</strong>?<br><br>From: ${player.buyIn}<br>To: <span style="color:#d4af37; font-weight:bold">${newValue}</span>`);
+        }
+
+        function requestUpdateCashOut(id, inputElement) {
+            const newValue = parseFloat(inputElement.value);
+            const player = players.find(p => p.id === id);
+            
+            if (!player) return;
+            if (isNaN(newValue)) {
+                renderTable();
+                return;
+            }
+            if (newValue === player.cashOut) return;
+
+            pendingChange = {
+                type: 'cashOut',
+                player: player,
+                newValue: newValue,
+                oldValue: player.cashOut
+            };
+
+            showChangeModal(`Modify Cash Out for <strong>${player.name}</strong>?<br><br>From: ${player.cashOut}<br>To: <span style="color:#aaddff; font-weight:bold">${newValue}</span>`);
+        }
+
+        function showChangeModal(msgHtml) {
+            document.getElementById('changeConfirmMessage').innerHTML = msgHtml;
+            document.getElementById('changeConfirmModal').style.display = 'flex';
+        }
+
+        function executeChange() {
+            if (pendingChange) {
+                if (pendingChange.type === 'buyIn') {
+                    pendingChange.player.buyIn = pendingChange.newValue;
+                } else if (pendingChange.type === 'cashOut') {
+                    pendingChange.player.cashOut = pendingChange.newValue;
+                }
+                calculateResults(); 
+            }
+            document.getElementById('changeConfirmModal').style.display = 'none';
+            pendingChange = null;
+        }
+
+        function cancelChange() {
+            renderTable();
+            document.getElementById('changeConfirmModal').style.display = 'none';
+            pendingChange = null;
+        }
+
+        // --- 3. 刪除確認邏輯 ---
+        function openDeleteModal(id) {
+            const player = players.find(p => p.id === id);
+            if (!player) return;
+
+            playerToDeleteId = id;
+            document.getElementById('deleteMessage').innerHTML = `Remove player <strong style="color:var(--text-main)">${player.name}</strong>?`;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal(e) {
+            if (e && e.target !== e.currentTarget) return;
+            document.getElementById('deleteModal').style.display = 'none';
+            playerToDeleteId = null;
+        }
+
+        function executeDelete() {
+            if (playerToDeleteId !== null) {
+                players = players.filter(p => p.id !== playerToDeleteId);
+                renderTable();
+                calculateResults();
+            }
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // --- 核心計算與渲染 ---
+        function calculateResults() {
+            let totalBuyIn = 0;
+            let totalCashOut = 0;
+
+            players.forEach(p => {
+                totalBuyIn += p.buyIn;
+                totalCashOut += p.cashOut;
+            });
+
+            document.getElementById('totalBuyIn').textContent = totalBuyIn;
+            document.getElementById('totalCashOut').textContent = totalCashOut;
+            
+            const diff = totalCashOut - totalBuyIn;
+            const statusEl = document.getElementById('balanceStatus');
+            
+            if (players.length === 0) {
+                statusEl.innerHTML = "No players yet.";
+            } else if (diff === 0) {
+                statusEl.innerHTML = "<span class='status-ok'>✅ BALANCE PERFECT</span>";
+            } else {
+                statusEl.innerHTML = `<span class='status-err'>❌ MISMATCH (Diff: ${diff})</span>`;
+            }
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('playerTableBody');
+            tbody.innerHTML = '';
+
+            players.forEach(player => {
+                const result = player.cashOut - player.buyIn;
+                const resultClass = result > 0 ? 'win' : (result < 0 ? 'lose' : '');
+                const resultText = result > 0 ? `+${result}` : result;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td data-label="Player" style="font-weight:bold; letter-spacing:1px; color:#f0e6d2;">${player.name}</td>
+                    <td data-label="Buy-in">
+                        <input type="number" value="${player.buyIn}" onchange="requestUpdateBuyIn(${player.id}, this)">
+                    </td>
+                    <td data-label="Cash Out">
+                        <input type="number" class="cashout-input" value="${player.cashOut}" onchange="requestUpdateCashOut(${player.id}, this)" placeholder="0">
+                    </td>
+                    <td data-label="Result">
+                        <span class="${resultClass}" style="font-size:1.1em">${resultText}</span>
+                    </td>
+                    <td data-label="Action">
+                        <button class="btn-delete-icon" onclick="openDeleteModal(${player.id})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('playerCount').textContent = players.length;
+        }
+
+        document.getElementById('modalBuyIn').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') confirmAddPlayer();
+        });
+        document.getElementById('modalName').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') document.getElementById('modalBuyIn').focus();
+        });
+    </script>
+</body>
+</html>

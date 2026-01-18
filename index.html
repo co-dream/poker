@@ -18,6 +18,7 @@
             --red: #e84118;    /* 輸錢 / 錯誤 */
             --blue: #00a8ff;   /* 重點 */
             --grey: #555555;   /* 重置 */
+            --orange: #e67e22; /* 上一步/下一步 */
             
             --border-radius: 12px;
         }
@@ -66,7 +67,9 @@
 
         .btn-add { background-color: var(--green); color: white; }
         .btn-export { background-color: var(--blue); color: white; }
-        .btn-reset { background-color: var(--grey); color: #ddd; } /* 重置按鈕 */
+        .btn-reset { background-color: var(--grey); color: #ddd; }
+        .btn-undo { background-color: var(--orange); color: white; } 
+        .btn-redo { background-color: var(--orange); color: white; } /* 下一步按鈕樣式 */
 
         /* 玩家卡片列表 */
         .player-list {
@@ -253,10 +256,19 @@
     <!-- 頂部區 -->
     <div class="header">
         <div class="header-info">
-            <h1>Poker Game</h1>
+            <h1>荔枝角邪惡榜</h1>
             <span class="player-count">人數: <span id="playerCount">0</span></span>
         </div>
         <div class="header-actions">
+            <!-- 歷史操作區 -->
+            <button class="btn-header btn-undo" onclick="executeUndo()">
+                <span>↩️</span> 上一步
+            </button>
+            <button class="btn-header btn-redo" onclick="executeRedo()">
+                <span>↪️</span> 下一步
+            </button>
+
+            <!-- 功能操作區 -->
             <button class="btn-header btn-reset" onclick="openResetModal()">
                 <span>🔄</span> 重置
             </button>
@@ -335,7 +347,7 @@
         </div>
     </div>
 
-    <!-- 5. 重置確認彈窗 (新功能) -->
+    <!-- 5. 重置確認彈窗 -->
     <div id="resetModal" class="modal-overlay" onclick="closeResetModal(event)">
         <div class="modal" onclick="event.stopPropagation()">
             <h2 style="color: var(--red);">⚠️ 重置遊戲</h2>
@@ -349,6 +361,8 @@
 
     <script>
         let players = [];
+        let historyStack = []; // 歷史紀錄堆疊
+        let redoStack = [];    // 重做紀錄堆疊 (下一步)
         const DEFAULT_BUYIN = 1000;
         
         // 暫存變數
@@ -370,6 +384,47 @@
                     console.error("Save data corrupted", e);
                 }
             }
+        }
+
+        // --- 歷史紀錄功能 (上一步/下一步) ---
+        function recordHistory() {
+            // 深層複製當前狀態並推入歷史堆疊
+            historyStack.push(JSON.parse(JSON.stringify(players)));
+            // 限制紀錄步數，避免記憶體過大 (例如保留最近50步)
+            if (historyStack.length > 50) historyStack.shift();
+            
+            // 一旦有新操作，清空 Redo 堆疊
+            redoStack = [];
+        }
+
+        function executeUndo() {
+            if (historyStack.length === 0) {
+                alert("沒有上一步紀錄");
+                return;
+            }
+            
+            // 在還原之前，將當前狀態存入 Redo 堆疊
+            redoStack.push(JSON.parse(JSON.stringify(players)));
+            
+            // 恢復上一個狀態
+            players = historyStack.pop();
+            saveToStorage();
+            renderPlayerList();
+        }
+
+        function executeRedo() {
+            if (redoStack.length === 0) {
+                alert("沒有下一步紀錄");
+                return;
+            }
+
+            // 在重做之前，將當前狀態存入 History 堆疊 (這樣才能再次 Undo)
+            historyStack.push(JSON.parse(JSON.stringify(players)));
+
+            // 恢復下一個狀態
+            players = redoStack.pop();
+            saveToStorage();
+            renderPlayerList();
         }
 
         // --- 1. 新增玩家 ---
@@ -394,6 +449,9 @@
                 return;
             }
 
+            // 紀錄歷史
+            recordHistory();
+
             players.push({
                 id: Date.now(),
                 name: name,
@@ -401,7 +459,7 @@
                 cashOut: 0
             });
 
-            saveToStorage(); // 存檔
+            saveToStorage();
             document.getElementById('modalName').value = '';
             closeAddModal();
             renderPlayerList();
@@ -434,11 +492,14 @@
 
         function executeChange() {
             if (pendingChange) {
+                // 紀錄歷史 (在修改前)
+                recordHistory();
+
                 const { player, type, newValue } = pendingChange;
                 if (type === 'buyIn') player.buyIn = newValue;
                 else player.cashOut = newValue;
                 
-                saveToStorage(); // 存檔
+                saveToStorage();
                 renderPlayerList();
             }
             document.getElementById('changeConfirmModal').style.display = 'none';
@@ -468,8 +529,11 @@
 
         function executeDelete() {
             if (playerToDeleteId !== null) {
+                // 紀錄歷史
+                recordHistory();
+
                 players = players.filter(p => p.id !== playerToDeleteId);
-                saveToStorage(); // 存檔
+                saveToStorage();
                 renderPlayerList();
             }
             document.getElementById('deleteModal').style.display = 'none';
@@ -541,7 +605,7 @@
             }
         }
 
-        // --- 5. 重置邏輯 (新功能) ---
+        // --- 5. 重置邏輯 ---
         function openResetModal() {
             document.getElementById('resetModal').style.display = 'flex';
         }
@@ -552,8 +616,11 @@
         }
 
         function executeReset() {
+            // 紀錄歷史
+            recordHistory();
+
             players = [];
-            saveToStorage(); // 存檔 (清空)
+            saveToStorage();
             renderPlayerList();
             document.getElementById('resetModal').style.display = 'none';
         }

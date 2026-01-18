@@ -33,32 +33,48 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 標題與按鈕區 (Header) */
+        /* 標題與按鈕區 (Header) - 修改為置中佈局 */
         .header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            flex-direction: column; /* 垂直排列 */
+            justify-content: center;
+            align-items: center;    /* 水平置中 */
+            margin-bottom: 25px;    /* 增加下方間距 */
+            gap: 15px;              /* 標題與按鈕的間距 */
         }
-        .header-info h1 { margin: 0; font-size: 1.3rem; color: var(--text-main); }
-        .player-count { color: var(--text-sub); font-size: 0.8rem; }
+        
+        .header-info {
+            text-align: center;     /* 文字置中 */
+        }
+        
+        .header-info h1 { 
+            margin: 0; 
+            font-size: 1.5rem;      /* 稍微加大標題 */
+            color: var(--text-main); 
+            margin-bottom: 5px;     /* 標題與人數的間距 */
+        }
+        
+        .player-count { color: var(--text-sub); font-size: 0.9rem; }
 
-        /* 右側按鈕群組 */
+        /* 按鈕群組 - 修改為置中 */
         .header-actions {
             display: flex;
-            gap: 4px; /* 從 8px 縮小到 4px */
+            gap: 6px;               /* 按鈕間距 */
+            flex-wrap: wrap;        /* 允許換行，防止小螢幕爆版 */
+            justify-content: center;/* 按鈕置中 */
+            width: 100%;
         }
 
         /* 通用標頭按鈕樣式 */
         .btn-header {
             border: none;
-            padding: 6px 10px; /* 從 8px 14px 縮小到 6px 10px */
+            padding: 8px 12px;      /* 稍微調整回好點擊的大小 */
             border-radius: 20px;
-            font-size: 0.8rem; /* 從 0.9rem 縮小到 0.8rem */
+            font-size: 0.85rem;
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 2px; /* 從 4px 縮小到 2px */
+            gap: 4px;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
             white-space: nowrap;

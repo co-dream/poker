@@ -68,15 +68,15 @@
         /* 通用標頭按鈕樣式 */
         .btn-header {
             border: none;
-            padding: 8px 12px;      /* 稍微調整回好點擊的大小 */
-            border-radius: 20px;
-            font-size: 0.85rem;
+            padding: 6px 10px;      /* 縮小約 20% (原 8px 12px) */
+            border-radius: 16px;    /* 稍微調整圓角比例 */
+            font-size: 0.75rem;     /* 縮小字體 (原 0.85rem) */
             font-weight: bold;
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 3px;               /* 縮小間距 (原 4px) */
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
             white-space: nowrap;
         }
         .btn-header:active { transform: scale(0.95); }
